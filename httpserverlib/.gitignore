@@ -1,0 +1,16 @@
+http-server
+valgrind-log.txt
+test-results.txt
+valgrind-results.txt
+*.dSYM/
+http-server-cpp
+test-results-cpp.txt
+http-server-unit
+a.out
+test/main.cpp
+src/parser.c
+hs-integration
+html
+latex
+build
+.cache
