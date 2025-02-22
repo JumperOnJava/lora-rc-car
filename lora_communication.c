@@ -1,4 +1,5 @@
-#include "LoRa.h"
+#define RPI
+#include "LoRa_rpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

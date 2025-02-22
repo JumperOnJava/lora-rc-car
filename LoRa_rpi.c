@@ -1,6 +1,8 @@
 #include <pigpio.h>
 
-#include "LoRa.h"
+#ifdef RPI
+#include "LoRa_rpi.h"
+#endif
 
 int LoRa_begin(LoRa_ctl *modem)
 {

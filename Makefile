@@ -1,10 +1,10 @@
 all: receive_implicit receive_explicit transmit_implicit transmit_explicit ping pong lora_communication
 
-LoRa.o: LoRa.c
-	gcc -c LoRa.c -o LoRa.o -lpigpio -lrt -pthread -lm
+LoRa.o: LoRa_rpi.c
+	gcc -c LoRa_rpi.c -o LoRa.o -lpigpio -lrt -pthread -lm
 
 lora_communication: LoRa.o lora_communication.o
-	gcc -o lora_communication lora_communication.c LoRa.c LoRa.h -lpigpio -lrt -pthread -lm
+	gcc -o lora_communication lora_communication.c LoRa_rpi.c LoRa_rpi.h -lpigpio -lrt -pthread -lm
 
 tx_implicit_example.o: tx_implicit_example.c
 	gcc -c tx_implicit_example.c -o tx_implicit_example.o -lpigpio -lrt -pthread -lm

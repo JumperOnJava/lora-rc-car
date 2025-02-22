@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "lora_rpi.h": "c",
+        "stdio.h": "c"
+    }
+}
