@@ -1,13 +1,13 @@
-#define RPI
-#include "LoRa_rpi.h"
+#include "LoRa.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <pigpio.h>
+#define EPOLL
 #define HTTPSERVER_IMPL
-#include "httpserverlib/httpserver.h"
+#include "httpserver.h"
 
 #define RESPONSE "Hello, World!"
 

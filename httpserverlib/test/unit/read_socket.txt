@@ -1,5 +1,0 @@
-GET /foo HTTP/1.1
-Host: www.jeremycw.com
-Content-Length: 13
-
-Hello, World!
