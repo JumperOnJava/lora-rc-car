@@ -1,0 +1,77 @@
+#include "mongoose.h"
+#include "json.hpp"
+#include <string>
+
+#define RESPONSE "Hello, World!"
+#define MIME_JSON "application/json"
+#define MIME_PLAIN "text/plain"
+
+using namespace std;
+
+static void handle_request(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
+string handleRequest(string address, json::JSON body, int &status, string &contentType);
+
+void start_server();
+
+string handleRequest(string address, json::JSON body, int &status, string &contentType)
+{я
+  if (address == "/sendControls")
+  {
+    float forward = body["forward"].ToNumber();
+    float leftRight = body["leftRight"].ToNumber();
+    printf("f: %.2f; lr: %.2f;\n",forward,leftRight);
+    status = 200;
+    contentType = MIME_PLAIN;
+    return "Ok";
+  }
+  status = 404;
+  contentType = MIME_PLAIN;
+  return "Wrong endpoint";
+}
+
+static void handle_request(struct mg_connection *c, int ev, void *ev_data)
+{
+  if (ev == MG_EV_HTTP_MSG)
+  {
+    struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+
+    string address(hm->uri.buf, hm->uri.len);
+    string body(hm->body.buf, hm->body.len);
+
+    int status = 500;
+    string contentType = MIME_PLAIN;
+    string response;
+
+    try
+    {
+      json::JSON parsedBody = json::JSON::Load(body);
+      response = handleRequest(address, parsedBody, status, contentType);
+    }
+    catch (const exception &e)
+    {
+      response = string("Error responding: ") + e.what();
+      status = 500;
+      contentType = MIME_PLAIN;
+    }
+
+    mg_http_reply(c, status, (string("Content-Type: ")+contentType+"\r\n").c_str(),response.c_str());
+  }
+}
+
+void start_server()
+{
+  struct mg_mgr mgr;
+  mg_mgr_init(&mgr);
+  mg_http_listen(&mgr, "http://0.0.0.0:8008", handle_request, NULL);
+  while (true)
+  {
+    mg_mgr_poll(&mgr, 1000);
+  }
+  mg_mgr_free(&mgr);
+}
+
+int main()
+{
+  start_server();
+  return 0;
+}

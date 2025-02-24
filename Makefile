@@ -4,10 +4,13 @@ LoRa.o: LoRa.c
 	gcc -c LoRa.c -o LoRa.o -lpigpio -lrt -pthread -lm
 
 lora_communication: LoRa.o lora_communication.o
-	gcc -o lora_communication lora_communication.c LoRa.c LoRa.h -lpigpio -lrt -pthread -lm
+	gcc -o lora_communication lora_communication.cpp LoRa.c LoRa.h -lpigpio -lrt -pthread -lm
 
-server-test: server_test.c
-	gcc -o server_test httpserverincludes.h server_test.c  -lrt -pthread -lm
+server-test: server_test.cpp
+	g++ -o server_test mongoose.h mongoose.c json.hpp server_test.cpp  -lrt -pthread -lm
+
+server-test-start: server-test
+	./server_test
 
 tx_implicit_example.o: tx_implicit_example.c
 	gcc -c tx_implicit_example.c -o tx_implicit_example.o -lpigpio -lrt -pthread -lm
