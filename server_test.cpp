@@ -1,4 +1,5 @@
 #include "mongoose.h"
+#include "lora-rc-car/LoraData.h"
 #include "json.hpp"
 #include <string>
 
@@ -13,8 +14,9 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
 
 void start_server();
 
+
 string handleRequest(string address, json::JSON body, int &status, string &contentType)
-{я
+{
   if (address == "/sendControls")
   {
     float forward = body["forward"].ToNumber();
@@ -24,6 +26,30 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     contentType = MIME_PLAIN;
     return "Ok";
   }
+  if (address == "/carAvailable"){
+    status = 200;
+    contentType = MIME_PLAIN;
+    return "Ok";
+  }
+  if (address == "/loraConnected"){
+    status = 200;
+    contentType = MIME_PLAIN;
+    return "Ok";
+  }
+  if (address == "/latestData"){
+    try{
+      body["since"].ToInt();
+      status = 200;
+      contentType = MIME_PLAIN;
+      return "Ok";
+    }
+    catch(exception e){
+      status = 400;
+      contentType = MIME_PLAIN;
+      return "Error while getting data";
+    }
+  }
+  if (address == "/")
   status = 404;
   contentType = MIME_PLAIN;
   return "Wrong endpoint";
@@ -72,6 +98,11 @@ void start_server()
 
 int main()
 {
+  if(sizeof(CarSensorData) > 200){
+    printf("CarSensorData structure is too large, please make sure everything is ok, or carefully increase this limit\n");
+    return -1;
+  }
+  printf("LoraSubServer started\n");
   start_server();
   return 0;
 }

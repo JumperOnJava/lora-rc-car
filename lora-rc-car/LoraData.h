@@ -11,11 +11,6 @@ enum CarMadePacketType{
     SEND_DATA = 2
 };
 
-enum SensorDataType{
-    GPS = 0,
-    HUM_TEMP_CO_CO2 = 1,
-};
-
 struct CarMadePacket
 {
     enum CarMadePacketType type:8;
@@ -29,17 +24,25 @@ struct StationMadePacket{
     uint8_t* data;
 };
 
-struct CarMadeSensorData
+struct CarSensorData
 {
-    enum SensorDataType sensorType:8;
-    uint8_t data[64];
-};
+  float temperature;
+  float humidity;
 
+  float co;
+  float co2;
+  float nh3;
+  float nox;
+  float gasoline;
+  float alcohol;
 
-struct Gps_Data
-{
-    float lat;
-    float lng;
+  float smoke;
+  float dust;
+
+  float gps_lat;
+  float gps_lng;
+  float gps_speed;
+  float gps_time;
 };
 
 struct CarControlData{
