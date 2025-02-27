@@ -6,6 +6,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define REG_FIFO 0x00
 #define REG_OP_MODE 0x01
