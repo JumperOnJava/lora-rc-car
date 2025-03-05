@@ -16,13 +16,19 @@ struct CarMadePacket
 {
     enum CarMadePacketType type:8;
     uint8_t size;
-    uint8_t data[256];
+    union {
+        uint8_t raw[256];
+        struct CarSensorData CarSensorData;
+    } data;
 };
 
 struct StationMadePacket{
     enum StationMadePacketType type:8;
     uint8_t size;
-    uint8_t data[256];
+    union {
+        uint8_t raw[256];
+        struct CarControlData CarControlData;
+    } data;
 };
 
 struct CarSensorData

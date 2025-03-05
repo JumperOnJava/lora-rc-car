@@ -5,7 +5,6 @@
 
 #include <pigpio.h>
 #include "LoRa.h"
-#include "lora-rc-car/LoraData.h"
 #include "lora_functions.cpp"
 
 #include <stdio.h>
@@ -41,12 +40,11 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     printf("f: %.2f; lr: %.2f;\n",forward,leftRight);
 
     struct StationMadePacket packet;
-    packet.type = StationMadePacketType.SEND_CONTROLS;
+    packet.type = SEND_CONTROLS;
     packet.size = sizeof(CarControlData);
     struct CarControlData controlData;
-    controlData.forward = forward;
-    controlData.leftRight = leftRight;
-    packet.data = (uint8_t*)&controlData;
+    packet.data.CarControlData.forward = forward;
+    packet.data.CarControlData.leftRight = leftRight;
 
     status = 200;
     contentType = MIME_PLAIN;
