@@ -1,3 +1,4 @@
+#define _Bool bool
 #include "LoRa.h"
 #include <stdio.h>
 
@@ -5,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <pigpio.h>
+#include "pigpio.h"
 
 
 

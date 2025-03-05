@@ -5,7 +5,7 @@
 
 #include <pigpio.h>
 #include "LoRa.h"
-
+#include "lora-rc-car/LoraData.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +14,7 @@
 #include <pigpio.h>
 #include <unistd.h>
 #include <map>
-
+#include <string>
 
 using namespace std;
 #define RESPONSE "Hello, World!"
@@ -26,7 +26,6 @@ using namespace std;
 
 using namespace std;
 
-void sendLoRaPacket(const struct StationMadePacket *packet);
 static void handle_request(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
 string handleRequest(string address, json::JSON body, int &status, string &contentType);
 
@@ -42,16 +41,12 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     printf("f: %.2f; lr: %.2f;\n",forward,leftRight);
 
     struct StationMadePacket packet;
-    packet.type = StationMadePacketType::SEND_CONTROLS;
+    packet.type = StationMadePacketType.SEND_CONTROLS;
     packet.size = sizeof(CarControlData);
     struct CarControlData controlData;
-
     controlData.forward = forward;
     controlData.leftRight = leftRight;
-    memcpy(packet.data,&controlData,sizeof(CarControlData));
-
-
-    sendLoRaPacket(&packet);
+    packet.data = (uint8_t*)&controlData;
 
     status = 200;
     contentType = MIME_PLAIN;
@@ -182,46 +177,34 @@ int main()
     }
     printf("LoraSubServer started\n");
     start_server();
+    
     LoRa_end(&modem);
     return EXIT_SUCCESS;
-}
-void sendLoRaPacket(const struct StationMadePacket *packet)
+} 
+void sendLoRaMessage(const uint8_t *data, size_t size)
 {
-    if (packet == NULL || packet->data == NULL || packet->size == 0)
+    if (data == NULL || size == 0)
     {
-        printf("Invalid packet.\n");
+        printf("Invalid data or size.\n");
         return;
     }
-
-    size_t total_size = 2 + packet->size; // type (1 byte) + size (1 byte) + data
-    uint8_t *buffer = (uint8_t *)malloc(total_size);
-    if (!buffer)
-    {
-        printf("Memory allocation failed.\n");
-        return;
-    }
-
-    buffer[0] = (uint8_t)packet->type;
-    buffer[1] = packet->size;
-    memcpy(&buffer[2], &(packet->data[0]), packet->size);
 
     printf("Sending: ");
-    for (size_t i = 0; i < total_size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        printf("%02X ", buffer[i]);
+        printf("%02X ", data[i]);
     }
     printf("\n");
 
-    modem.tx.data.buf = (char*) buffer;
-    modem.tx.data.size = total_size;
+    modem.tx.data.buf = (uint8_t *)data;
+    modem.tx.data.size = size;
     
+    pthread_mutex_lock(&lora_send_mutex);
     LoRa_send(&modem);
     usleep(100E3);
     LoRa_receive(&modem);
-
-    free(buffer);
+    pthread_mutex_unlock(&lora_send_mutex);
 }
-
 
 void *receiveThread(void *p)
 {

@@ -6,7 +6,9 @@
         "string.h": "c",
         "*.tcc": "cpp",
         "string": "cpp",
-        "mongoose.h": "c"
+        "mongoose.h": "c",
+        "lora.h": "c",
+        "stdlib.h": "c"
     },
     "cmake.ignoreCMakeListsMissing": true
 }
