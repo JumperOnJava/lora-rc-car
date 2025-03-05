@@ -6,6 +6,8 @@
 #include <pigpio.h>
 #include "LoRa.h"
 #include "lora-rc-car/LoraData.h"
+#include "lora_functions.cpp"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,11 +17,10 @@
 #include <unistd.h>
 #include <map>
 #include <string>
+#include <queue>
 
 using namespace std;
-#define RESPONSE "Hello, World!"
-
-
+#define QUEUE_SIZE 100
 #define RESPONSE "Hello, World!"
 #define MIME_JSON "application/json"
 #define MIME_PLAIN "text/plain"
@@ -30,7 +31,6 @@ static void handle_request(struct mg_connection *c, int ev, void *ev_data, void 
 string handleRequest(string address, json::JSON body, int &status, string &contentType);
 
 void start_server();
-
 
 string handleRequest(string address, json::JSON body, int &status, string &contentType)
 {
@@ -122,100 +122,19 @@ void start_server()
   mg_mgr_free(&mgr);
 }
 
-void *receiveThread(void *p);
-
-void tx_f(txData *tx)
-{
-}
-void *rx_f(void *p)
-{
-    rxData *rx = (rxData *)p;
-    printf("\neceived: %s \n", rx->buf);
-    free(p);
-    return NULL;
-}
-LoRa_ctl modem;
-pthread_mutex_t lora_send_mutex;
 map<int, struct CarSensorData> data;
 char messageBuf[256];
 int main()
 {
-    modem.spiCS = 0;
-    modem.tx.callback = tx_f;
-    modem.rx.callback = rx_f;
-    modem.eth.preambleLen = 8;
-    modem.eth.bw = BW125;             // Bandwidth: 125 kHz
-    modem.eth.sf = SF7;               // Spreading Factor: SF7
-    modem.eth.CRC = 1;                // Optional CRC enable
-    modem.eth.ecr = CR6;              // Error coding rate: CR5
-    modem.eth.freq = 433000000;       // Frequency: 433 MHz
-    modem.eth.resetGpioN = 4;         // Reset GPIO pin
-    modem.eth.dio0GpioN = 17;         // DIO0 GPIO pin for RX/TX done interrupt
-    modem.eth.outPower = OP20;        // Output power level
-    modem.eth.powerOutPin = PA_BOOST; // Use PA_BOOST for power amplification
-    modem.eth.AGC = 1;                // Enable Auto Gain Control
-    modem.eth.OCP = 240;              // Over-current protection (max current in mA)
-    modem.eth.implicitHeader = 0;     // Use explicit header mode
-    modem.eth.syncWord = 0x12;        // Set sync word
-
-    if (LoRa_begin(&modem) != 0)
-    {
-        fprintf(stderr, "LoRa initialization failed\n");
-        return -1;
-    }
-    lora_reset_irq_flags(modem.spid);
-    printf("Started LoRa\n");
-
-    pthread_t transmit_thread;
-    pthread_create(&transmit_thread, NULL, receiveThread, NULL);
-
-    LoRa_receive(&modem);
-
+    
     if(sizeof(CarSensorData) > 200){
         printf("CarSensorData structure is too large, please make sure everything is ok, or carefully increase this limit\n");
         return -1;
     }
     printf("LoraSubServer started\n");
     start_server();
-    
-    LoRa_end(&modem);
+    startLora();
     return EXIT_SUCCESS;
-} 
-void sendLoRaMessage(const uint8_t *data, size_t size)
-{
-    if (data == NULL || size == 0)
-    {
-        printf("Invalid data or size.\n");
-        return;
-    }
-
-    printf("Sending: ");
-    for (size_t i = 0; i < size; i++)
-    {
-        printf("%02X ", data[i]);
-    }
-    printf("\n");
-
-    modem.tx.data.buf = (uint8_t *)data;
-    modem.tx.data.size = size;
-    
-    pthread_mutex_lock(&lora_send_mutex);
-    LoRa_send(&modem);
-    usleep(100E3);
-    LoRa_receive(&modem);
-    pthread_mutex_unlock(&lora_send_mutex);
 }
 
-void *receiveThread(void *p)
-{
-    int prevread = 0;
-    while (1)
-    {
-        int nowread = gpioRead(17);
-        if (nowread == 1 && prevread == 0)
-        {
-            rxDoneISRf(0, 0, 0, &modem);
-        }
-    }
-    return NULL;
-}
+
