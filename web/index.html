@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Square Joystick</title>
+    <style>
+        canvas {
+            border: 2px solid black;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <img src='/camera' width='640'><br>
+    <canvas id="joystick" width="200" height="200"></canvas>
+    <div id="joystickDataClient"></div>
+    <div id="queueData"></div>
+    <div id="loraStation"></div>
+    <div id="loraCar"></div>
+    <button onclick="sendPing()">ping</button>
+    <script>
+        const canvas = document.getElementById("joystick");
+        const ctx = canvas.getContext("2d");
+        let isPressed = false;
+        let joystickData = { forward: 0, leftRight: 0 };
+
+        function drawJoystick(x, y) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "red";
+            ctx.fillRect(x - 10, y - 10, 20, 20);
+        }
+
+        function sendData() {
+            document.getElementById("joystickDataClient").innerText = JSON.stringify(joystickData);
+            if (isPressed) {
+                fetch("/api/sendControls", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(joystickData)
+                });
+            }
+        }
+        function sendPing() {
+            fetch("/api/ping", { method: "POST" });
+        }
+        function handleMove(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            joystickData.leftRight = (x - canvas.width / 2) / (canvas.width / 2);
+            joystickData.forward = -(y - canvas.height / 2) / (canvas.height / 2);
+            drawJoystick(x, y);
+        }
+
+        canvas.addEventListener("pointerdown", (event) => {
+            isPressed = true;
+            handleMove(event);
+        });
+
+        canvas.addEventListener("pointermove", (event) => {
+            if (isPressed) handleMove(event);
+        });
+
+        document.addEventListener("pointerup", () => {
+            isPressed = false;
+            joystickData = { forward: 0, leftRight: 0 };
+            drawJoystick(canvas.width / 2, canvas.height / 2);
+        });
+
+        drawJoystick(canvas.width / 2, canvas.height / 2);
+        setInterval(sendData, 100);
+
+        const loraPinger = () => {
+            setTimeout(() => {
+                fetch("/api/loraConnected").then(async response => {
+                    const text = await response.text()
+                    if (response.status != 200) {
+                        document.getElementById("loraStation").innerText = "no connection to lora server";
+                    }
+                    else {
+                        document.getElementById("loraStation").innerText = (text=="true" ? "lora station connected ✅": "lora station disconnected⛔");
+                    }
+                    loraPinger();
+                }).catch((err) => {
+                    console.error(err);
+                    loraPinger();
+                })
+            }, 500)
+        }
+        loraPinger();
+
+        const queuePinger = () => {
+            setTimeout(() => {
+                fetch("/api/queue").then(async response => {
+                    const text = await response.text()
+                    if (response.status != 200) {
+                        document.getElementById("queueData").innerText = "no connection to lora server";
+                    }
+                    else {
+                        document.getElementById("queueData").innerText = text;
+                    }
+                    queuePinger();
+                }).catch((err) => {
+                    console.error(err);
+                    queuePinger();
+                })
+            }, 500)
+        }
+        queuePinger();
+    </script>
+</body>
+
+</html>

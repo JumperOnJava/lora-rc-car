@@ -4,7 +4,7 @@ LoRa.o: LoRa.c
 	gcc -c LoRa.c -o LoRa.o -lpigpio -lrt -pthread -lm
 
 lora_communication: LoRa.o lora_communication.o
-	g++ -o lora_communication LoRa.c LoRa.h lora_communication.cpp -lpigpio -lrt -pthread -lm
+	g++ -o old_lora_communication LoRa.c LoRa.h old_lora_communication.cpp -lpigpio -lrt -pthread -lm
 
 lora_communication_server: 
 	g++ -o lora_communication_server mongoose.h mongoose.c LoRa.c LoRa.h lora_communication_server.cpp -lpigpio -lrt -pthread -lm

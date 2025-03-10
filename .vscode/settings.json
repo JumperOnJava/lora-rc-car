@@ -8,7 +8,12 @@
         "string": "cpp",
         "mongoose.h": "c",
         "lora.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "random": "cpp",
+        "string_view": "cpp",
+        "array": "cpp",
+        "hash_map": "cpp",
+        "initializer_list": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

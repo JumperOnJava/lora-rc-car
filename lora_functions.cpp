@@ -1,77 +1,110 @@
 #include "LoRa.h"
 #include "lora-rc-car/LoraData.h"
 #include <string>
-#include <queue>
+#include <deque>
 #include <pigpio.h>
 
 void sendLoRaPacket(const struct StationMadePacket *packet);
-
-typedef struct
+void charArrayToHexString(const char *data, size_t length, char *output)
 {
-    uint8_t *data;
-    size_t size;
-} LoRaQueueItem;
+    for (size_t i = 0; i < length; i++)
+    {
+        sprintf(output + (i * 2), "%02X ", (unsigned char)data[i]);
+    }
+}
 
 pthread_t send_thread;
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
-std::queue<LoRaQueueItem> packet_queue;
+std::deque<StationMadePacket> packetQueue;
 bool thread_running = false;
 
 LoRa_ctl modem;
-
+bool loraModuleConnected();
+StationMadePacket *emtpyPriorityPacket;
+StationMadePacket emtpyPriorityPacket_;
+void setEmptyPriorityPacket(StationMadePacket packet)
+{
+    if (packetQueue.empty())
+    {
+        packetQueue.push_back(packet);
+        pthread_cond_signal(&queue_cond);
+        emtpyPriorityPacket = nullptr;
+    }
+    else
+    {
+        emtpyPriorityPacket_ = packet;
+        emtpyPriorityPacket = &emtpyPriorityPacket_;
+    }
+}
 
 void *send_thread_func(void *arg)
 {
-  while (1)
-  {
-      pthread_mutex_lock(&queue_mutex);
-      while (packet_queue.empty())
-      {
-          pthread_cond_wait(&queue_cond, &queue_mutex);
-      }
+    while (1)
+    {
+        pthread_mutex_lock(&queue_mutex);
+        while (packetQueue.empty())
+        {
+            pthread_cond_wait(&queue_cond, &queue_mutex);
+        }
 
-      LoRaQueueItem item = packet_queue.front();
-      packet_queue.pop();
-      pthread_mutex_unlock(&queue_mutex);
+        StationMadePacket item = packetQueue.front();
 
-      printf("Sending: ");
-      for (size_t i = 0; i < item.size; i++)
-      {
-          printf("%02X ", item.data[i]);
-      }
-      printf("\n");
+        if (LoRa_check_conn(&modem))
+        {
+            pthread_mutex_unlock(&queue_mutex);
 
-      modem.tx.data.buf = (char*) item.data;
-      modem.tx.data.size = item.size;
+            char buffer[1024];
+            charArrayToHexString((char *)&item, item.size + 2, buffer);
+            printf("Sending packet: %s\n", buffer);
 
-      printf("sending/");
-      LoRa_send(&modem);
-      printf("sent/");
-      usleep(100E3);
-      printf("sentw/");
-      LoRa_receive(&modem);
-      printf("receiving/");
+            modem.tx.data.buf = (char *)&item;
+            modem.tx.data.size = item.size + 2;
 
-      free(item.data);
-  }
-  return NULL;
+            LoRa_send(&modem);
+            printf("Sent packet: %s\n", buffer);
+            usleep(100e3);
+            LoRa_receive(&modem);
+        }
+        packetQueue.pop_front();
+    }
+    return NULL;
 }
-
 
 void *receiveThread(void *p);
 
 void tx_f(txData *tx)
 {
 }
+
+#include <time.h>
+
+long startPing = 0;
+long lastReceivedPing = 0;
+
+long current_epoch_millis()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
+}
+
 void *rx_f(void *p)
 {
     rxData *rx = (rxData *)p;
     printf("\neceived: %s \n", rx->buf);
+    CarMadePacket *packet = (CarMadePacket *)rx->buf;
+
+    if (packet->type == PING_REPLY_TO_STATION)
+    {
+        lastReceivedPing = current_epoch_millis();
+        printf("ping time: %d", lastReceivedPing - startPing);
+        startPing = 0;
+    }
+
     free(p);
     return NULL;
 }
-
 
 int startLora()
 {
@@ -110,26 +143,19 @@ int startLora()
 
 void sendLoRaPacket(const struct StationMadePacket *packet)
 {
-    if (packet == NULL || packet->data == NULL || packet->size == 0)
-    {
-        printf("Invalid packet.\n");
-        return;
-    }
-
     size_t total_size = 2 + packet->size;
-    uint8_t *buffer = (uint8_t *)malloc(total_size);
-    if (!buffer)
+
+    char hexString[4096];
+    charArrayToHexString((char *)packet, total_size, hexString);
+    if(!loraModuleConnected())
     {
-        printf("Memory allocation failed.\n");
+        printf("%s | Packet discarded because lora module is disconnected\n",hexString);
         return;
     }
-
-    buffer[0] = (uint8_t)packet->type;
-    buffer[1] = packet->size;
-    memcpy(&buffer[2], &(packet->data[0]), packet->size);
-
+    
+    printf("Enqueued packet: %s\n", hexString);
     pthread_mutex_lock(&queue_mutex);
-    packet_queue.push({buffer, total_size});
+    packetQueue.push_back(*packet);
     pthread_cond_signal(&queue_cond);
     pthread_mutex_unlock(&queue_mutex);
 
@@ -140,6 +166,10 @@ void sendLoRaPacket(const struct StationMadePacket *packet)
     }
 }
 
+bool loraModuleConnected()
+{
+    return LoRa_check_conn(&modem);
+}
 
 void *receiveThread(void *p)
 {
