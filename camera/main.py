@@ -5,8 +5,8 @@ app = Flask(__name__)
 
 # Open the USB camera (usually /dev/video0 on Raspberry Pi)
 camera = cv2.VideoCapture(0)
-camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640/2)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480/2)
 
 def generate_frames():
     while True:

@@ -1,6 +1,22 @@
 {
     "tasks": [
         {
+            "label": "Build WSL Server",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-o",
+                "wsl_lora_communication_server",
+                "mongoose.h",
+                "mongoose.c",
+                "lora_communication_server.cpp",
+                "-lrt",
+                "-pthread",
+                "-lm"
+            ],
+            "group": "build"
+        },
+        {
             "type": "cppbuild",
             "label": "C/C++: g++ build active file",
             "command": "/usr/bin/g++",

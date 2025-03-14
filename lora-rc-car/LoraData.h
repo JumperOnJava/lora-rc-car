@@ -23,17 +23,20 @@ struct CarSensorData
 };
 
 struct CarControlData{
+    //from -100 to 100
     int8_t forward;
-    int8_t leftRight;
+    //from 0 to 180
+    uint8_t leftRight;
 };
 
 
 enum StationMadePacketType{
     PING_TO_CAR = 1,
-    SEND_CONTROLS = 2 //sending controls to car
+    SEND_CONTROLS = 2, //sending controls to car
+    CAMERA_KEEPALIVE = 3,
 };
 enum CarMadePacketType{
-    PING_REPLY_TO_STATION = 1, //sent once a second when car did't received any packets for some time
+    PING_REPLY_TO_STATION = 1, 
     SEND_DATA = 2
 };
 

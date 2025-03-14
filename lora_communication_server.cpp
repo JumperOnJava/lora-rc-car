@@ -2,14 +2,11 @@
 #include "mongoose.h"
 #include <string>
 
-#include <pigpio.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <pigpio.h>
 #include <unistd.h>
 #include <map>
 #include <string>
@@ -56,58 +53,33 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     packet.type = PING_TO_CAR;
     packet.size = 0;
     startPing = current_epoch_millis();
-    sendLoRaPacket(&packet);
+    enqueueLoRaPacket(&packet);
     
     status = 200;
     contentType = MIME_PLAIN;
     return "pinged, check result in console";
   }
+  if(address == "/api/cameraKeepAlive"){
+    struct StationMadePacket packet;
+    packet.type = CAMERA_KEEPALIVE;
+    packet.size = 0;
+    enqueueLoRaPacket(&packet);
+    printf("cameraKeepAlivePacket\n");
+    
+    status = 200;
+    contentType = MIME_PLAIN;
+    return "done";
+  }
   if(address == "/api/queue"){
     json::JSON queueDataJson = json::Object();
     queueDataJson["length"] = packetQueue.size();
     vector<json::JSON> json;
-    deque<StationMadePacket> queueCopy;
+    #define queueCopy packetQueue
     
-    std::copy(packetQueue.begin(),packetQueue.end(),queueCopy.begin());
-    printf("!!1\n");
     queueDataJson["data"] = json::Array();
-    printf("!!2\n");
-    for(int i=0;i<queueCopy.size();i++){
-      string type = "UNKNOWN_TYPE";
-      json::JSON data;
-      printf("!!3\n");
-      switch (queueCopy[i].type)
-      {
-        case PING_TO_CAR:
-          printf("!!3.1.1\n");
-          type = "PING_TO_CAR";
-          printf("!!3.1.2\n");
-          data = json::JSON::Load("null");
-          printf("!!3.1.3\n");
-          break;
-        case SEND_CONTROLS:
-          printf("!!3.2.1\n");
-          type = "SEND_CONTROLS";
-          printf("!!3.2.2\n");
-          data = {
-            {"forward", queueCopy[i].data.CarControlData.forward},
-            {"leftRight", queueCopy[i].data.CarControlData.leftRight}
-          };
-          printf("!!3.2.3\n");
-
-          break;
-      }
-      printf("!!4\n");
-      queueDataJson["data"][i] = {
-        {"type",type},
-        {"size",packetQueue[i].size},
-        {"data",data}
-      };
-      printf("!!5\n");
-    }
+    
     status = 200;
     contentType = MIME_JSON;
-    printf("!!6\n");
     return queueDataJson.dump();
 
   }
@@ -117,21 +89,21 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
   if (address == "/api/sendControls")
   {
     DEFINE_JSON
-    float forward = json["forward"].ToNumber();
-    float leftRight = json["leftRight"].ToNumber();
-    printf("f: %.2f; lr: %.2f;\n", forward, leftRight);
+    int forward = json["forward"].ToInt();
+    int leftRight = json["leftRight"].ToInt();
+    printf("f: %d; lr: %d;\n", forward, leftRight);
 
-    forward = min(1.f,max(-1.f,forward));
-    leftRight = min(1.f,max(-1.f,leftRight));
+    forward = max(-100,min(100,forward));
+    leftRight = max(0,min(180,leftRight));
 
     struct StationMadePacket packet;
     packet.type = SEND_CONTROLS;
     packet.size = sizeof(CarControlData);
-    packet.data.CarControlData.forward = forward*127;
-    packet.data.CarControlData.leftRight = leftRight*127;
+    packet.data.CarControlData.forward = forward;
+    packet.data.CarControlData.leftRight = leftRight;
 
     if(packetQueue.empty()){
-      sendLoRaPacket(&packet);
+      enqueueLoRaPacket(&packet);
     }
 
 
@@ -203,8 +175,9 @@ static void handle_request(struct mg_connection *c, int ev, void *ev_data)
   }
 }
 
-void start_server()
+void* start_server(void *p)
 {
+  printf("http thread: %d/%d\n",gettid(),getpid());
   struct mg_mgr mgr;
   mg_mgr_init(&mgr);
   mg_http_listen(&mgr, "http://0.0.0.0:8008", handle_request, NULL);
@@ -217,16 +190,13 @@ void start_server()
 
 map<int, struct CarSensorData> data;
 char messageBuf[256];
+
+pthread_t http_thread;
 int main()
 {
-
-  if (sizeof(CarSensorData) > 200)
-  {
-    printf("CarSensorData structure is too large, please make sure everything is ok, or carefully increase this limit\n");
-    return -1;
-  }
-  startLora();
   printf("LoraSubServer started\n");
-  start_server();
+  pthread_create(&http_thread, NULL, start_server, NULL);
+  pthread_detach(http_thread);
+  startLora();
   return EXIT_SUCCESS;
 }

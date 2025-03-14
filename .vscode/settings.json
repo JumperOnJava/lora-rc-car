@@ -13,7 +13,12 @@
         "string_view": "cpp",
         "array": "cpp",
         "hash_map": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "lora.c": "cpp",
+        "pthread.h": "c",
+        "cstddef": "c",
+        "stdint.h": "c",
+        "stdbool.h": "c"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

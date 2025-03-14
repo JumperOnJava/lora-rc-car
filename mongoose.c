@@ -5228,7 +5228,7 @@ static void close_conn(struct mg_connection *c) {
 
 static bool can_write(struct mg_connection *c) {
   return c->is_connecting == 0 && c->is_resolving == 0 && c->send.len > 0 &&
-         c->is_tls_hs == 0 && c->is_arplooking == 0;
+         c->is_tls_hs == 0 && c->is_ar`looking == 0;
 }
 
 void mg_mgr_poll(struct mg_mgr *mgr, int ms) {

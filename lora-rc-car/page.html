@@ -1,0 +1,107 @@
+R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Керування</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #222; color: white; }
+    button, input { width: 80%; padding: 15px; margin: 10px; font-size: 1.2em; }
+    table { margin: auto; border-collapse: collapse; }
+    table, th, td { border: 1px solid white; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Керування сервоприводом</h2>
+  <input type="range" min="0" max="180" value="90" id="servo" oninput="updateServo()">
+  <p id="angleValue">Кут: 90°</p>
+  
+  <h2>Керування мотором</h2>
+  <button onclick="sendMotor('forward')">Вперед</button>
+  <button onclick="sendMotor('stop')">Стоп</button>
+  <button onclick="sendMotor('backward')">Назад</button>
+
+  <table>
+    <tr>
+      <th>Параметр</th>
+      <th>Значення</th>
+    </tr>
+    <tr>
+      <td>Температура</td>
+      <td id="tempValue">-- °C</td>
+    </tr>
+    <tr>
+      <td>Вологість</td>
+      <td id="humValue">-- %</td>
+    </tr>
+    <tr>
+      <td>CO2</td>
+      <td id="co2Value">-- PPM</td>
+    </tr>
+    <tr>
+      <td>CO</td>
+      <td id="coValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>Бензол</td>
+      <td id="benzeneValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>Алкоголь</td>
+      <td id="alcoholValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>Аміак</td>
+      <td id="ammoniaValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>NOx</td>
+      <td id="noxValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>Сірководень</td>
+      <td id="sulphideValue">-- PPM</td>
+    </tr>
+    <tr>
+      <td>Пил</td>
+      <td id="dustValue">-- µg/m³</td>
+    </tr>
+    <tr>
+      <td>GPS Координати</td>
+      <td id="gpsValue">--, --</td>
+    </tr>
+  </table>
+
+  <script>
+    function updateServo() {
+      var angle = document.getElementById("servo").value;
+      document.getElementById("angleValue").innerHTML = "Кут: " + angle + "°";
+      fetch("/control?servo=" + angle);
+    }
+
+    function sendMotor(command) {
+      fetch("/control?motor=" + command);
+    }
+    
+    setInterval(function() {
+      fetch("/sensors")
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("tempValue").innerHTML = data.temperature + " °C";
+          document.getElementById("humValue").innerHTML = data.humidity + " %";
+          document.getElementById("co2Value").innerHTML = data.CO2 + " PPM";
+          document.getElementById("coValue").innerHTML = data.CO + " PPM";
+          document.getElementById("benzeneValue").innerHTML = data.Benzene + " PPM";
+          document.getElementById("alcoholValue").innerHTML = data.Alcohol + " PPM";
+          document.getElementById("ammoniaValue").innerHTML = data.Ammonia + " PPM";
+          document.getElementById("noxValue").innerHTML = data.NOx + " PPM";
+          document.getElementById("sulphideValue").innerHTML = data.Sulphide + " PPM";
+          document.getElementById("dustValue").innerHTML = data.dust + " µg/m³";
+          document.getElementById("gpsValue").innerHTML = data.gps.latitude + ", " + data.gps.longitude;
+        });
+    }, 3000);
+  </script>
+</body>
+</html>
+)rawliteral"

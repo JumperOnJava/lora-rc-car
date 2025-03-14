@@ -1,5 +1,4 @@
-#include "pigpio.h"
-
+#include <pigpio.h>
 #include "LoRa.h"
 
 
@@ -137,19 +136,21 @@ void lora_set_dio_tx_mapping(int spid)
 
 void lora_set_rxdone_dioISR(int gpio_n, rxDoneISR func, LoRa_ctl *modem)
 {
-	gpioSetMode(gpio_n, PI_INPUT);
-	gpioSetISRFuncEx(gpio_n, RISING_EDGE, 0, func, (void *)modem);
+	// gpioSetMode(gpio_n, PI_INPUT);
+	// gpioSetISRFuncEx(gpio_n, RISING_EDGE, 0, func, (void *)modem);
+	printf("registered rx callback\n");
 }
 
 void lora_set_txdone_dioISR(int gpio_n, txDoneISR func, LoRa_ctl *modem)
 {
-	gpioSetMode(gpio_n, PI_INPUT);
-	gpioSetISRFuncEx(gpio_n, RISING_EDGE, 0, func, (void *)modem);
+	// gpioSetISRFuncEx(gpio_n, RISING_EDGE, 0, func, (void *)modem);
+	printf("registered tx callback\n");
 }
 
 void lora_remove_dioISR(int gpio_n)
 {
-	gpioSetISRFunc(gpio_n, RISING_EDGE, 0, NULL);
+	// gpioSetISRFunc(gpio_n, RISING_EDGE, 0, NULL);
+	printf("un-registered callback\n");
 }
 
 void LoRa_send(LoRa_ctl *modem)
@@ -184,7 +185,6 @@ void LoRa_send(LoRa_ctl *modem)
 
 void LoRa_receive(LoRa_ctl *modem)
 {
-
 	LoRa_calculate_packet_t(modem);
 	if (modem->eth.lowDataRateOptimize)
 	{
@@ -231,6 +231,7 @@ void lora_get_snr(LoRa_ctl *modem)
 
 void rxDoneISRf(int gpio_n, int level, uint32_t tick, void *modemptr)
 {
+	printf("rxDone interrupt\n");
 	LoRa_ctl *modem = (LoRa_ctl *)modemptr;
 	unsigned char rx_nb_bytes;
 
@@ -273,6 +274,7 @@ void rxDoneISRf(int gpio_n, int level, uint32_t tick, void *modemptr)
 
 void txDoneISRf(int gpio_n, int level, uint32_t tick, void *modemptr)
 {
+	printf("txDone interrupt\n");
 	LoRa_ctl *modem = (LoRa_ctl *)modemptr;
 	if (lora_reg_read_byte(modem->spid, REG_IRQ_FLAGS) & IRQ_TXDONE)
 	{

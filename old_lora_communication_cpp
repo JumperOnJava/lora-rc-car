@@ -63,7 +63,7 @@ int main()
     while (1)
     {
         fgets(messageBuf, sizeof(messageBuf), stdin);
-	messageBuf[strcspn(messageBuf, "\n")] = 0;
+	    messageBuf[strcspn(messageBuf, "\n")] = 0;
 
         if(strcmp(messageBuf,"exit")==0){
             break;
