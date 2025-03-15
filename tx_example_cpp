@@ -1,14 +1,17 @@
 
 #include "LoRa.c"
 
+LoRa_ctl modem;
+
 void tx_f(txData *tx){
     printf("tx done \n");
+    LoRa_send(&modem);
+
 }
 
 int main(){
 
     char txbuf[255];
-    LoRa_ctl modem;
 
     //See for typedefs, enumerations and there values in LoRa.h header file
     modem.spiCS = 0;//Raspberry SPI CE pin number
@@ -40,7 +43,7 @@ int main(){
     printf("payloadSymbNb: %u\n", modem.tx.data.payloadSymbNb);
 
     printf("sleep %d seconds to transmitt complete\n", (int)modem.tx.data.Tpkt/1000);
-    sleep(((int)modem.tx.data.Tpkt/1000)+1);
+    sleep(100000000);
 
     printf("end\n");
 

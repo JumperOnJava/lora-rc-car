@@ -228,7 +228,7 @@ void loop() {
     }
   }
   if (millis() - latestMoveCommandTime < 500) {
-    // myServo.write(latestMoveCommandLeftRight);
+    myServo.write(latestMoveCommandLeftRight);
     if (latestMoveCommandForward > 0) {
         digitalWrite(PIN_FORWARD, HIGH);
         digitalWrite(PIN_BACKWARD, LOW);

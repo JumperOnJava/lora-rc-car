@@ -45,8 +45,10 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
   {
     status = 200;
     contentType = MIME_PLAIN;
-    printf(loraModuleConnected() ? "lora true\n" : "lora false\n");
-    return loraModuleConnected() ? "true" : "false";
+    // bool connected = loraModuleConnected();
+    bool connected = true;
+    printf( connected ? "lora true\n" : "lora false\n");
+    return connected ? "true" : "false";
   }
   if(address == "/api/ping"){
     struct StationMadePacket packet;

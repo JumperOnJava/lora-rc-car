@@ -18,7 +18,8 @@
         "pthread.h": "c",
         "cstddef": "c",
         "stdint.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "tx_example_cpp": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }
