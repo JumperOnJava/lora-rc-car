@@ -40,10 +40,10 @@ bool loraModuleConnected();
 StationMadePacket *emtpyPriorityPacket;
 StationMadePacket emtpyPriorityPacket_;
 
-long current_epoch_millis()
+long millis()
 {
     struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
@@ -68,17 +68,37 @@ void tx_f(txData *tx)
 {
     printf("Sent packet\n");
 }
+CarSensorData latestData;
 void *rx_f(void *p)
 {
     rxData *rx = (rxData *)p;
     printf("\nReceived: %s \n", rx->buf);
     CarMadePacket *packet = (CarMadePacket *)rx->buf;
 
+    printf("SIZE %d\n",rx->size);
     if (packet->type == PING_REPLY_TO_STATION)
     {
-        lastReceivedPing = current_epoch_millis();
+        lastReceivedPing = millis();
         printf("ping time: %lld\n", lastReceivedPing - startPing);
         startPing = 0;
+    } else if(packet->type == SEND_SENSOR_DATA){
+        printf("Received SEND_SENSOR_DATA\n");
+        latestData = packet->data.CarSensorData;
+        latestData.local_time = (uint64_t)time(NULL);
+        printf("temperature %f\n",latestData.temperature);
+        printf("humidity %f\n",latestData.humidity);
+        printf("co %f\n",latestData.co);
+        printf("co2 %f\n",latestData.co2);
+        printf("nh3 %f\n",latestData.nh3);
+        printf("nox %f\n",latestData.nox);
+        printf("gasoline %f\n",latestData.gasoline);
+        printf("alcohol %f\n",latestData.alcohol);
+        printf("s2 %f\n",latestData.s2);
+        printf("dust %f\n",latestData.dust);
+        printf("gps_lat %f\n",latestData.gps_lat);
+        printf("gps_lng %f\n",latestData.gps_lng);
+        printf("gps_speed %f\n",latestData.gps_speed);
+        printf("gps_time %f\n",latestData.gps_time);
     }
 
     free(p);
@@ -102,43 +122,6 @@ void enqueueLoRaPacket(const struct StationMadePacket *packet)
 // bool loraModuleConnected()
 // {
 //     return LoRa_check_conn(&modem);
-// }
-
-// void *interruptThread(void *p)
-// {
-//     printf("receive thread: %d/%d\n", gettid(), getpid());
-//     int prevread = 0;
-//     gpioSetMode(17, PI_INPUT);
-//     while (1)
-//     {
-//         printf("locked mutex interrupt\n");
-//         int nowread = gpioRead(17);
-//         // printf("pin17: %d\n", nowread);
-//         if (nowread == 1 && prevread == 0)
-//         {
-//             // printf("dio0 Rising edge on mode %d\n", LoRa_get_op_mode(&modem));
-//             // if (LoRa_get_op_mode(&modem) == RXCONT_MODE)
-//             // {
-//             //     printf("calling receiveDone\n");
-//             //     rxDoneISRf(0, 0, 0, &modem);
-//             //     printf("cafinished receiveDone\n");
-//             //     return;
-//             // }
-//             // else if (LoRa_get_op_mode(&modem) == TX_MODE || LoRa_get_op_mode(&modem) == STDBY_MODE)
-//             // {
-//             printf("calling transmitDone\n");
-//             txDoneISRf(0, 0, 0, &modem);
-//             printf("finished transmitDone\n");
-//             // }
-//             // LoRa_begin(&modem);
-//         }
-//         if (nowread == 0 && prevread == 1)
-//         {
-//             printf("dio0 Falling edge\n");
-//         }
-//         prevread = nowread;
-//     }
-//     return NULL;
 // }
 
 void loraThread()
@@ -173,8 +156,6 @@ void loraThread()
     LoRa_receive(&modem);
     printf("unlocked mutex begin\n");
 
-    // pthread_create(&interrupt_thread, NULL, interruptThread, NULL);
-    // pthread_detach(interrupt_thread);
 
     printf("Started lora thread\n");
     while (1)
@@ -189,7 +170,9 @@ void loraThread()
             {
                 LoRa_receive(&modem);
                 int prevread = gpioRead(17);
-                while (packetQueue.empty())
+                long start;
+                start = millis();
+                while (1)
                 {
                     int nowread = gpioRead(17);
                     if (nowread == 1 && prevread == 0)
@@ -198,6 +181,13 @@ void loraThread()
                         rxDoneISRf(0, 0, 0, &modem);
                         printf("finished receiveDone\n");
                     }
+                    long mms = millis() - start;
+                    if(mms >= 200){
+                        if(!packetQueue.empty()){
+                            printf("200 ms break\n");
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -205,6 +195,7 @@ void loraThread()
             StationMadePacket item = packetQueue.front();
             packetQueue.pop_front();
             pthread_mutex_unlock(&queue_mutex);
+
             char buffer[1024];
             charArrayToHexString((char *)&item, item.size + 2, buffer);
             printf("Sending packet: %s\n", buffer);

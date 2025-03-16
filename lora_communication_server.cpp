@@ -54,7 +54,7 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     struct StationMadePacket packet;
     packet.type = PING_TO_CAR;
     packet.size = 0;
-    startPing = current_epoch_millis();
+    startPing = millis();
     enqueueLoRaPacket(&packet);
     
     status = 200;
@@ -83,7 +83,32 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     status = 200;
     contentType = MIME_JSON;
     return queueDataJson.dump();
+  }
 
+
+  if(address == "/api/sensorData"){
+    json::JSON responseJson = json::Object();
+    CarSensorData sensorData = latestData;
+    responseJson["local_time"] = sensorData.local_time;
+    
+    responseJson["temperature"] = sensorData.temperature;
+    responseJson["humidity"] = sensorData.humidity;
+    responseJson["co"] = sensorData.co;
+    responseJson["co2"] = sensorData.co2;
+    responseJson["nh3"] = sensorData.nh3;
+    responseJson["nox"] = sensorData.nox;
+    responseJson["gasoline"] = sensorData.gasoline;
+    responseJson["alcohol"] = sensorData.alcohol;
+    responseJson["s2"] = sensorData.s2;
+    responseJson["dust"] = sensorData.dust;
+    responseJson["gps_lat"] = sensorData.gps_lat;
+    responseJson["gps_lng"] = sensorData.gps_lng;
+    responseJson["gps_speed"] = sensorData.gps_speed;
+    responseJson["gps_time"] = sensorData.gps_time;
+
+    status = 200;
+    contentType = MIME_JSON;
+    return responseJson.dump();
   }
 
   #define DEFINE_JSON if(false){status=400;contentType=MIME_HTML;return "json body empty";}json::JSON json = body;

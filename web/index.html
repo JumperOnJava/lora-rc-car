@@ -17,9 +17,10 @@
     <img src='/camera' width='640'><br>
     <canvas id="joystick" width="200" height="200"></canvas>
     <div id="joystickDataClient"></div>
-    <div id="queueData"></div>
-    <div id="loraStation"></div>
-    <div id="loraCar"></div>
+    <div id="queueData"></div><br>
+    <div id="loraStation"></div><br>
+    <div id="sensorData"></div><br>
+    <div id="loraCar"></div><br>
     <button onclick="sendPing()">ping</button>
     <script>
         const canvas = document.getElementById("joystick");
@@ -49,7 +50,7 @@
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            joystickData.leftRight = Math.round((x - canvas.width / 2) / (canvas.width / 2) * 90) + 90;
+            joystickData.leftRight =180- ( Math.round((x - canvas.width / 2) / (canvas.width / 2) * 90) + 90);
             joystickData.forward = Math.round((y - canvas.height / 2) / (canvas.height / 2) * 100);
             drawJoystick(x, y);
         }
@@ -78,24 +79,24 @@
         }
             , 100);
 
-        const loraPinger = () => {
-            setTimeout(() => {
-                fetch("/api/loraConnected").then(async response => {
-                    const text = await response.text()
-                    if (response.status != 200) {
-                        document.getElementById("loraStation").innerText = "no connection to lora server";
-                    }
-                    else {
-                        document.getElementById("loraStation").innerText = (text == "true" ? "lora station connected ✅" : "lora station disconnected⛔");
-                    }
-                    loraPinger();
-                }).catch((err) => {
-                    console.error(err);
-                    loraPinger();
-                })
-            }, 500)
-        }
-        loraPinger();
+        // const loraPinger = () => {
+        //     setTimeout(() => {
+        //         fetch("/api/loraConnected").then(async response => {
+        //             const text = await response.text()
+        //             if (response.status != 200) {
+        //                 document.getElementById("loraStation").innerText = "no connection to lora server";
+        //             }
+        //             else {
+        //                 document.getElementById("loraStation").innerText = (text == "true" ? "lora station connected ✅" : "lora station disconnected⛔");
+        //             }
+        //             loraPinger();
+        //         }).catch((err) => {
+        //             console.error(err);
+        //             loraPinger();
+        //         })
+        //     }, 1000)
+        // }
+        // loraPinger();
 
         const queuePinger = () => {
             setTimeout(() => {
@@ -112,8 +113,32 @@
                     console.error(err);
                     queuePinger();
                 })
-            }, 500)
+            }, 1000)
         }
+        const sensorDataPinger = () => {
+            setTimeout(() => {
+                fetch("/api/sensorData").then(async response => {
+                    const sensorDataJson = (await response.json());
+                    if (response.status != 200) {
+                        document.getElementById("sensorData").innerText = "no connection to lora server";
+                    }
+                    else {
+                        if(sensorDataJson.humidity == 0){
+                            document.getElementById("sensorData").innerText = "No sensor data received yet";
+                        }
+                        else{
+                            sensorDataJson.local_time = new Date(sensorDataJson.local_time*1000).toString();
+                            document.getElementById("sensorData").innerText = JSON.stringify(sensorDataJson,null,4);
+                        }
+                    }
+                    sensorDataPinger();
+                }).catch((err) => {
+                    console.error(err);
+                    sensorDataPinger();
+                })
+            }, 1000)
+        }
+        sensorDataPinger();
 
         setInterval(()=>{
             fetch("/api/cameraKeepAlive");

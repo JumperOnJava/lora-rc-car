@@ -12,14 +12,15 @@ struct CarSensorData
   float nox;
   float gasoline;
   float alcohol;
+  float s2;
 
-  float smoke;
   float dust;
 
   float gps_lat;
   float gps_lng;
   float gps_speed;
   float gps_time;
+  float local_time;
 };
 
 struct CarControlData{
@@ -37,7 +38,7 @@ enum StationMadePacketType{
 };
 enum CarMadePacketType{
     PING_REPLY_TO_STATION = 1, 
-    SEND_DATA = 2
+    SEND_SENSOR_DATA = 2
 };
 
 struct CarMadePacket

@@ -36,7 +36,7 @@ const char *password = "12345678";
 WebServer server(80);
 Servo myServo;
 
-#define PIN_CAMERA 35     // Пін для камери
+#define PIN_CAMERA 35   // Пін для камери
 #define PIN_SERVO 2     // Пін для сервоприводу
 #define PIN_FORWARD 6   // Пін для руху вперед
 #define PIN_BACKWARD 7  // Пін для руху назад
@@ -146,9 +146,14 @@ void loop() {
   if (millis() - lastSensorRead > 2000) {
     lastSensorRead = millis();
 
+    CarSensorData sensorData;
     // Считывание с датчиков SHT31
     float temp = sht31.readTemperature();
+    sensorData.temperature = temp;
+
     float hum = sht31.readHumidity();
+    sensorData.humidity = hum;
+
     if (!isnan(temp) && !isnan(hum)) {
       Serial.print("Температура: ");
       Serial.print(temp);
@@ -184,11 +189,45 @@ void loop() {
     Serial.print("Пил в повітрі: ");
     Serial.print(sensorDustDensity);
     Serial.println(" ug/m3");
+    sensorData.dust = sensorDustDensity;
 
     // Оновлення GPS даних
     while (gpsSerial.available() > 0) {
       gps.encode(gpsSerial.read());
     }
+
+    sensorData.gps_lat = gps.location.lat();
+    sensorData.gps_lng = gps.location.lng();
+    sensorData.gps_speed = gps.speed.kmph();
+
+    //примітка 1
+    //я поняття не маю чому це зроблено так, цей код писав не я
+    //моє діло його відправити лорою а що ці дані значать я хз
+    //  - Сливік
+    float ppmCO2 = gasSensor.getPPM();
+    Serial.println(String("ppm: ") + gasSensor.getPPM());
+
+    sensorData.co2 = ppmCO2;
+    float ppmCO = ppmCO2 * 0.6;
+    sensorData.co = ppmCO;
+    float ppmBenzene = ppmCO2 * 0.05;
+    sensorData.gasoline = ppmBenzene;
+    float ppmAlcohol = ppmCO2 * 0.2;
+    sensorData.alcohol = ppmAlcohol;
+    float ppmAmmonia = ppmCO2 * 0.3;
+    sensorData.nh3 = ppmAmmonia;
+    float ppmNOx = ppmCO2 * 0.15;
+    sensorData.nox = ppmNOx;
+    float ppmSulphide = ppmCO2 * 0.1;
+    sensorData.s2 = ppmSulphide;
+
+    LoRa.beginPacket();
+    CarMadePacket pingResponse;
+    pingResponse.type = SEND_SENSOR_DATA;
+    pingResponse.size = sizeof(CarSensorData);
+    pingResponse.data.CarSensorData = sensorData;
+    LoRa.write((uint8_t *)&pingResponse, 2 + sizeof(CarSensorData));
+    LoRa.endPacket(false);
   }
 
 #ifdef LORA
@@ -215,6 +254,7 @@ void loop() {
       latestMoveCommandLeftRight = controls.leftRight;
     }
     if (packet->type == PING_TO_CAR) {
+      delay(20);
       LoRa.beginPacket();
       CarMadePacket pingResponse;
       pingResponse.type = PING_REPLY_TO_STATION;
@@ -223,17 +263,16 @@ void loop() {
       LoRa.endPacket(false);
       Serial.println("Ping response!");
     }
-    if(packet->type == CAMERA_KEEPALIVE){
+    if (packet->type == CAMERA_KEEPALIVE) {
       cameraCommandTime = millis();
     }
   }
   if (millis() - latestMoveCommandTime < 500) {
     myServo.write(latestMoveCommandLeftRight);
     if (latestMoveCommandForward > 0) {
-        digitalWrite(PIN_FORWARD, HIGH);
-        digitalWrite(PIN_BACKWARD, LOW);
-      }
-    else if (latestMoveCommandForward < 0) {
+      digitalWrite(PIN_FORWARD, HIGH);
+      digitalWrite(PIN_BACKWARD, LOW);
+    } else if (latestMoveCommandForward < 0) {
       digitalWrite(PIN_FORWARD, LOW);
       digitalWrite(PIN_BACKWARD, HIGH);
     } else if (latestMoveCommandForward == 0) {
@@ -282,6 +321,7 @@ void handleSensors() {
   float hum = sht31.readHumidity();
 
   // Читання значень з MQ-135
+  // ctrl + f > примітка 1
   float ppmCO2 = gasSensor.getPPM();
   float ppmCO = ppmCO2 * 0.6;
   float ppmBenzene = ppmCO2 * 0.05;
