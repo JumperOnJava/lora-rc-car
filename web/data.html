@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC-CAR / Data</title>
+    <script src="tailwind.js"></script>
+</head>
+
+<body>
+    <div class="flex w-screen h-[100dvh] flex-col items-center justify-center text-indigo-950">
+        <div class="w-screen h-8 self-end mb-auto justify-center flex text-white">
+            <div class="flex flex-1 flex-row justify-between bg-indigo-700 rounded-b-xl pt-1" style="max-width: 36rem;">
+                <div class="w-screen h-8 self-end mt-auto justify-center flex text-white">
+                    Статус LoRa -&nbsp;<span id="loraStation">Connecting 🛜</span> 
+                </div>
+            </div>
+        </div>
+        <div id="sensorData" class="text-2xl text-center p-3">
+            Час останнього оновлення:&nbsp <div id="latest_time">--:--:--</div>
+        </div>
+        <table class="min-w-full table-auto m-0">
+            <thead>
+                <tr class="bg-indigo-500 text-white">
+                    <th class="px-4 py-2 w-1/2">Параметр</th>
+                    <th class="px-4 py-2 w-1/2">Значення</th>
+                </tr>
+            </thead>
+        </table>
+        <div id="sensorTable" class="overflow-x-auto w-full max-w-4xl bg-white px-4 ">
+            <table class="min-w-full table-auto">
+
+                <tbody id="sensorTableBody">
+                    <tr id="time_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Час отримання </td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="gps_time_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">GPS Час</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="temperature_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Температура</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="humidity_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Вологість</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+
+                    <tr id="co_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">CO</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="co2_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">CO2</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="nh3_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">NH3</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="nox_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">NOx</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="gasoline_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Бензин</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="alcohol_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Спирт</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="s2_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">S2</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="dust_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">Дим</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="gps_lat_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">GPS Широта</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="gps_lng_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">GPS Довгота</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                    <tr id="gps_speed_row" class="border-b">
+                        <td class="px-4 py-2 font-semibold text-indigo-700">GPS Швидкість</td>
+                        <td class="px-4 py-2 text-right text-indigo-900">--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="w-screen h-16 self-end mt-auto justify-center flex text-white">
+            <div class="flex flex-1 flex-row justify-between bg-indigo-700 rounded-t-xl" style="max-width: 36rem;">
+                <a href="/index.html" class="flex-1 align-middle justify-center text-center p-2 text-gray-400">
+                    🕹️<br>Control
+                </a>
+                <div class="flex-1 align-middle justify-center text-center p-2">
+                    📊<br>Data
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        String.prototype["$"] = function () {
+            return document.getElementById(this);
+        }
+
+        const sensorDataPinger = () => {
+            setTimeout(() => {
+                fetch("/api/sensorData").then(async response => {
+                    const sensorDataJson = (await response.json());
+                    if (response.status != 200) {
+                        document.getElementById("sensorData").innerText = "Error connecting to Lora server";
+                    } else {
+                        if (sensorDataJson.humidity == 0) {
+                            "latest_time".$().innerText = "-";
+                        } else {
+                            let local_time = new Date(sensorDataJson.local_time * 1000);
+                            local_time.setUTCSeconds(local_time.getUTCSeconds() + 60 * 60 * 2)
+                            sensorDataJson.local_time = local_time.toString();
+                            "latest_time".$().innerText = local_time.toISOString().substring(11, 19);
+                            console.log(local_time);
+                            console.log("latest_time".$().innerText);
+                            let gps_time = new Date(sensorDataJson.gps_time * 1000 + 60 * 60 * 2 * 1000);
+                            sensorDataJson.gps_time = gps_time.toISOString().substring(11, 19);
+                            updateSensorTable(sensorDataJson)
+                        }
+                    }
+                    sensorDataPinger();
+                }).catch((err) => {
+                    console.error(err);
+                    sensorDataPinger();
+                })
+            }, 1000)
+        }
+
+        sensorDataPinger();
+
+        function generateRandomData() {
+            return {
+                "local_time": new Date().toISOString(),
+                "temperature": (Math.random() * 40 - 10).toFixed(2),
+                "humidity": (Math.random() * 100).toFixed(2),
+                "co": (Math.random() * 5).toFixed(2),
+                "co2": (Math.random() * 1000).toFixed(2),
+                "nh3": (Math.random() * 50).toFixed(2),
+                "nox": (Math.random() * 100).toFixed(2),
+                "gasoline": (Math.random() * 100).toFixed(2),
+                "alcohol": (Math.random() * 100).toFixed(2),
+                "s2": (Math.random() * 100).toFixed(2),
+                "dust": (Math.random() * 500).toFixed(2),
+                "gps_lat": (Math.random() * 180 - 90).toFixed(6),
+                "gps_lng": (Math.random() * 360 - 180).toFixed(6),
+                "gps_speed": (Math.random() * 200).toFixed(2),
+                "gps_time": new Date().toISOString()
+            };
+        }
+
+        // A flexible mapping between JSON keys and table row IDs
+        const sensorDataMapping = {
+            'local_time': { id: 'time_row', unit: '' },
+            'temperature': { id: 'temperature_row', unit: '°C' },
+            'humidity': { id: 'humidity_row', unit: '%' },
+            'co': { id: 'co_row', unit: 'PPM' },
+            'co2': { id: 'co2_row', unit: 'PPM' },
+            'nh3': { id: 'nh3_row', unit: 'PPM' },
+            'nox': { id: 'nox_row', unit: 'PPM' },
+            'gasoline': { id: 'gasoline_row', unit: '%' },
+            'alcohol': { id: 'alcohol_row', unit: '%' },
+            's2': { id: 's2_row', unit: '%' },
+            'dust': { id: 'dust_row', unit: 'µg/m³' },
+            'gps_lat': { id: 'gps_lat_row', unit: '°' },
+            'gps_lng': { id: 'gps_lng_row', unit: '°' },
+            'gps_speed': { id: 'gps_speed_row', unit: 'km/h' },
+            'gps_time': { id: 'gps_time_row', unit: '' },
+        };
+
+        function updateSensorTable(data) {
+            Object.keys(sensorDataMapping).forEach((key) => {
+                const rowId = sensorDataMapping[key].id;
+                const unit = sensorDataMapping[key].unit;
+                const row = document.getElementById(rowId);
+                const valueCell = row.cells[1];
+                valueCell.textContent = data[key] + (unit ? ` ${unit}` : '');
+            });
+        }
+
+
+        const loraPinger = () => {
+            setTimeout(() => {
+                fetch("/api/loraConnected").then(async response => {
+                    const text = await response.text()
+                    if (response.status != 200) {
+                        document.getElementById("loraStation").innerText = "⛔ Сервер LoRa вимкнутий";
+                    }
+                    else {
+                        document.getElementById("loraStation").innerText = (text == "true" ? "✅ Підключено" : "⛔ Відключено");
+                    }
+                    loraPinger();
+                }).catch((err) => {
+                    console.error(err);
+                    loraPinger();
+                })
+            }, 500)
+        }
+        loraPinger();
+        // setInterval(() => { updateSensorTable(generateRandomData()) }, 2000); // Update table every 2 seconds
+    </script>
+</body>
+
+</html>

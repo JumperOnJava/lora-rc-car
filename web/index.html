@@ -4,24 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canvas Square Joystick</title>
+    <title>RC-CAR / Control</title>
     <style>
         canvas {
             border: 2px solid black;
             touch-action: none;
         }
     </style>
+    <script src="tailwind.js"></script>
 </head>
 
 <body>
-    <img src='/camera' width='640'><br>
-    <canvas id="joystick" width="200" height="200"></canvas>
-    <div id="joystickDataClient"></div>
-    <div id="queueData"></div><br>
-    <div id="loraStation"></div><br>
-    <div id="sensorData"></div><br>
-    <div id="loraCar"></div><br>
-    <button onclick="sendPing()">ping</button>
+    <div class="flex w-screen h-[100dvh] flex-col items-center justify-center text-indigo-950 gap-3">
+        <div class="w-screen h-8 self-end justify-center flex text-white">
+            <div class="flex flex-1 flex-row justify-between bg-indigo-700 rounded-b-xl pt-1" style="max-width: 36rem;">
+                <div class="w-screen h-8 self-end mt-auto justify-center flex text-white">
+                    Статус LoRa -&nbsp;<span id="loraStation">Connecting 🛜</span> 
+                </div>
+            </div>
+        </div>
+        
+        <img src='camera' class="w-full flex flex-grow-0 max-w-lg bg-slate-400 text-center align-middle text-white object-contain"
+            style="aspect-ratio: 1.33333;" alt="camera">
+        
+        <canvas id="joystick" class="w-full max-w-52 aspect-square select-none"></canvas>
+    
+        <div class="flex w-screen h-16 self-end mt-auto justify-center text-white">
+            <div class="flex flex-1 flex-row justify-between bg-indigo-700 rounded-t-xl" style="max-width: 36rem;">
+                <div class="flex-1 align-middle justify-center text-center p-2">
+                    🕹️<br>Control
+                </div>
+                <a href="/data.html" class="flex-1 align-middle justify-center text-center p-2 text-gray-400">
+                    📊<br>Data
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- <img src='https://assets3.cbsnewsstatic.com/hub/i/r/2012/02/06/1feb5115-a644-11e2-a3f0-029118418759/thumbnail/640x480/0b2239f368c848f939fbf73bdf8de115/breading-cats-y006.jpg?v=8de240724d7f6d8b5f54f62bb158c012' -->
     <script>
         const canvas = document.getElementById("joystick");
         const ctx = canvas.getContext("2d");
@@ -34,33 +54,60 @@
             ctx.fillStyle = "red";
             ctx.fillRect(x - 10, y - 10, 20, 20);
         }
-
-        function sendData() {
-            document.getElementById("joystickDataClient").innerText = JSON.stringify(joystickData);
+        function sendControls() {
             fetch("/api/sendControls", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(joystickData)
             });
-        }
-        function sendPing() {
-            fetch("/api/ping", { method: "POST" });
+            document.getElementById("joystickDataClient").innerText = JSON.stringify(joystickData);
         }
         function handleMove(event) {
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            joystickData.leftRight =180- ( Math.round((x - canvas.width / 2) / (canvas.width / 2) * 90) + 90);
+            joystickData.leftRight = 180 - (Math.round((x - canvas.width / 2) / (canvas.width / 2) * 90) + 90);
             joystickData.forward = Math.round((y - canvas.height / 2) / (canvas.height / 2) * 100);
+            if (Math.abs(joystickData.forward) < 30) {
+                joystickData.forward = 0;
+            }
             drawJoystick(x, y);
         }
+
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+
+        function handleKeyDown(event) {
+            if (event.key === "ArrowUp") {
+                joystickData.forward = 100;
+            } else if (event.key === "ArrowDown") {
+                joystickData.forward = -100;
+            } else if (event.key === "ArrowLeft") {
+                joystickData.leftRight = 0;
+            } else if (event.key === "ArrowRight") {
+                joystickData.leftRight = 180;
+            }
+            const x = canvas.width * (forward / 200 + 1);
+            const y = canvas.height * (leftRight / 180);
+            drawJoystick(x, y);
+        }
+
+        function handleKeyUp(event) {
+            if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+                joystickData.forward = 0;
+            } else if (["ArrowLeft", "ArrowRight"].includes(event.key)) {
+                joystickData.leftRight = 90;
+            }
+            drawJoystick(canvas.width / 2, canvas.height / 2);
+        }
+
 
         canvas.addEventListener("pointerdown", (event) => {
             isPressed = true;
             handleMove(event);
         });
 
-        canvas.addEventListener("pointermove", (event) => {
+        document.addEventListener("pointermove", (event) => {
             if (isPressed) handleMove(event);
         });
 
@@ -70,34 +117,37 @@
             drawJoystick(canvas.width / 2, canvas.height / 2);
         });
 
-        drawJoystick(canvas.width / 2, canvas.height / 2);
         setInterval(() => {
             if (isPressed) {
-                sendData()
+                sendControls()
             }
 
         }
             , 100);
 
-        // const loraPinger = () => {
-        //     setTimeout(() => {
-        //         fetch("/api/loraConnected").then(async response => {
-        //             const text = await response.text()
-        //             if (response.status != 200) {
-        //                 document.getElementById("loraStation").innerText = "no connection to lora server";
-        //             }
-        //             else {
-        //                 document.getElementById("loraStation").innerText = (text == "true" ? "lora station connected ✅" : "lora station disconnected⛔");
-        //             }
-        //             loraPinger();
-        //         }).catch((err) => {
-        //             console.error(err);
-        //             loraPinger();
-        //         })
-        //     }, 1000)
-        // }
-        // loraPinger();
+        const loraPinger = () => {
+            setTimeout(() => {
+                fetch("/api/loraConnected").then(async response => {
+                    const text = await response.text()
+                    if (response.status != 200) {
+                        document.getElementById("loraStation").innerText = "⛔ Сервер LoRa вимкнутий";
+                    }
+                    else {
+                        document.getElementById("loraStation").innerText = (text == "true" ? "✅ Підключено" : "⛔ Відключено");
+                    }
+                    loraPinger();
+                }).catch((err) => {
+                    console.error(err);
+                    loraPinger();
+                })
+            }, 500)
+        }
+        loraPinger();
 
+
+        function sendPing() {
+            fetch("/api/ping", { method: "POST" });
+        }
         const queuePinger = () => {
             setTimeout(() => {
                 fetch("/api/queue").then(async response => {
@@ -115,37 +165,19 @@
                 })
             }, 1000)
         }
-        const sensorDataPinger = () => {
-            setTimeout(() => {
-                fetch("/api/sensorData").then(async response => {
-                    const sensorDataJson = (await response.json());
-                    if (response.status != 200) {
-                        document.getElementById("sensorData").innerText = "no connection to lora server";
-                    }
-                    else {
-                        if(sensorDataJson.humidity == 0){
-                            document.getElementById("sensorData").innerText = "No sensor data received yet";
-                        }
-                        else{
-                            sensorDataJson.local_time = new Date(sensorDataJson.local_time*1000).toString();
-                            document.getElementById("sensorData").innerText = JSON.stringify(sensorDataJson,null,4);
-                        }
-                    }
-                    sensorDataPinger();
-                }).catch((err) => {
-                    console.error(err);
-                    sensorDataPinger();
-                })
-            }, 1000)
-        }
-        sensorDataPinger();
 
-        setInterval(()=>{
+
+        setInterval(() => {
             fetch("/api/cameraKeepAlive");
-        },15000)
+        }, 15000)
         fetch("/api/cameraKeepAlive");
 
-        queuePinger();
+        // queuePinger();
+        let joystickCanvas = document.getElementById("joystick");
+        joystickCanvas.width = joystickCanvas.clientWidth;
+        joystickCanvas.height = joystickCanvas.clientHeight;
+        drawJoystick(canvas.width / 2, canvas.height / 2);
+
     </script>
 </body>
 

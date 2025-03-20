@@ -1,23 +1,40 @@
 from flask import Flask, Response
 import cv2
+import threading
 
 app = Flask(__name__)
 
-# Open the USB camera (usually /dev/video0 on Raspberry Pi)
+# Open the USB camera
 camera = cv2.VideoCapture(0)
 camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+camera.set(cv2.CAP_PROP_FPS, 30)  # Set higher FPS if possible
+
+frame = None
+lock = threading.Lock()
+
+def capture_frames():
+    global frame
+    while True:
+        success, img = camera.read()
+        if success:
+            with lock:
+                frame = img
+
+# Start frame capture thread
+threading.Thread(target=capture_frames, daemon=True).start()
 
 def generate_frames():
+    global frame
     while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
+        with lock:
+            if frame is None:
+                continue
             ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            if not ret:
+                continue
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
 @app.route('/video_feed')
 def video_feed():

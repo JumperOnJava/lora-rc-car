@@ -250,4 +250,8 @@ void lora_set_explicit_header(int spid){}
 
 
 int gpioRead(int value){return 0;}
+int gpioWrite(unsigned gpio, unsigned level){return 0;}
 int gpioSetMode(unsigned gpio, unsigned mode);
+void gpioTerminate();
+#define PI_INPUT 0
+#define PI_OUTPUT 1

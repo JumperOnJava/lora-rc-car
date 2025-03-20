@@ -6,7 +6,7 @@
 #include <Wire.h>
 #include "Adafruit_SHT31.h"
 #include <MQ135.h>  // Додавання бібліотеки для MQ-135
-#include <SoftwareSerial.h>
+#include <HardwareSerial.h>
 #include <TinyGPS++.h>
 
 #define LORA
@@ -63,8 +63,9 @@ float sensorDustDensity;
 #define TX_PIN 38  // Підключити RX GPS до 3-го піну ESP32
 #define GPS_BAUD 9600
 
-SoftwareSerial gpsSerial(RX_PIN, TX_PIN);  // Ініціалізація серійного з'єднання з GPS
+HardwareSerial gpsSerial(1);  // Use UART1 on ESP32
 TinyGPSPlus gps;
+
 
 unsigned long lastSensorRead = 0;
 
@@ -73,11 +74,11 @@ void setup() {
 
   // Ініціалізація I²C для SHT31
   Wire.begin(37, 36);  // SDA на GPIO 16, SCL на GPIO 15
-  if (!sht31.begin(0x44)) {
-    Serial.println("Не найден SHT31!");
-    while (1)
-      delay(10);
-  }
+    if (!sht31.begin(0x44)) {
+      Serial.println("Не найден SHT31!");
+      while (1)
+        delay(10);
+    }
   Serial.println("Датчик SHT31 подключен.");
 
   // Налаштування Wi-Fi точки доступу
@@ -86,7 +87,6 @@ void setup() {
 
   // Налаштування сервоприводу
   myServo.attach(PIN_SERVO);
-  myServo.write(90);  // Початкова позиція
 
   pinMode(PIN_CAMERA, OUTPUT);
 
@@ -101,8 +101,10 @@ void setup() {
   digitalWrite(PIN_IR_LED, LOW);  // Вимкнути IR LED при запуску
 
   // Налаштування GPS
-  gpsSerial.begin(GPS_BAUD);
+    gpsSerial.begin(GPS_BAUD, SERIAL_8N1, RX_PIN, TX_PIN); // Initialize GPS Serial
   Serial.println("GPS модуль готовий!");
+
+
 
   // Налаштування веб-сервера
   server.on("/", handleRoot);
@@ -125,6 +127,11 @@ void setup() {
       delay(1000);
     }
   }
+      myServo.write(0);
+    delay(1000);
+    myServo.write(180);
+    delay(1000);
+    myServo.write(90);
   Serial.println("LoRa NodeESP - Ready");
   //}
 #endif
@@ -192,10 +199,24 @@ void loop() {
     sensorData.dust = sensorDustDensity;
 
     // Оновлення GPS даних
+    // LoRa.beginPacket();
+    // LoRa.write(0xff);  
+    // LoRa.write(0xff);  
+    // LoRa.write('g');  
+    // LoRa.write('p');  
+    // LoRa.write('s'); 
+    // LoRa.write(':');  
+    // LoRa.write(' ');  
+    
     while (gpsSerial.available() > 0) {
-      gps.encode(gpsSerial.read());
+      char c = gpsSerial.read();
+      // LoRa.write(c);  
+      Serial.write(c);
+      gps.encode(c);
     }
+    // LoRa.endPacket(false);
 
+    sensorData.gps_time = gps.time.hour()*3600+gps.time.minute()*60+gps.time.second();
     sensorData.gps_lat = gps.location.lat();
     sensorData.gps_lng = gps.location.lng();
     sensorData.gps_speed = gps.speed.kmph();
@@ -229,6 +250,7 @@ void loop() {
     LoRa.write((uint8_t *)&pingResponse, 2 + sizeof(CarSensorData));
     LoRa.endPacket(false);
   }
+
 
 #ifdef LORA
   //{

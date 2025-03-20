@@ -45,8 +45,7 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
   {
     status = 200;
     contentType = MIME_PLAIN;
-    // bool connected = loraModuleConnected();
-    bool connected = true;
+    bool connected = loraModuleConnected();
     printf( connected ? "lora true\n" : "lora false\n");
     return connected ? "true" : "false";
   }
@@ -67,7 +66,9 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
     packet.size = 0;
     enqueueLoRaPacket(&packet);
     printf("cameraKeepAlivePacket\n");
-    
+
+    cameraTime = millis();
+
     status = 200;
     contentType = MIME_PLAIN;
     return "done";
@@ -89,8 +90,8 @@ string handleRequest(string address, json::JSON body, int &status, string &conte
   if(address == "/api/sensorData"){
     json::JSON responseJson = json::Object();
     CarSensorData sensorData = latestData;
+
     responseJson["local_time"] = sensorData.local_time;
-    
     responseJson["temperature"] = sensorData.temperature;
     responseJson["humidity"] = sensorData.humidity;
     responseJson["co"] = sensorData.co;
@@ -227,3 +228,4 @@ int main()
   startLora();
   return EXIT_SUCCESS;
 }
+

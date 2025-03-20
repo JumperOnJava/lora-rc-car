@@ -20,7 +20,7 @@ struct CarSensorData
   float gps_lng;
   float gps_speed;
   float gps_time;
-  float local_time;
+  uint64_t local_time;
 };
 
 struct CarControlData{
